@@ -28,7 +28,13 @@ let lastMessageId = null;  // Store the last message ID sent to the webhook
 // Function to format the current time nicely
 function formatTime() {
     const now = new Date();
-    return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    return new Intl.DateTimeFormat('en-GB', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZone: 'Europe/Amsterdam',
+        hour12: false // Use 24-hour format
+    }).format(now);
 }
 
 // Function to send or edit a message in the webhook
@@ -42,8 +48,9 @@ async function sendOrEditWebhookNotification(status) {
             text: `Last updated at: ${formatTime()}`,
         },
         fields: [
-            { name: 'User ID', value: `${USER_ID_TO_WATCH}`, inline: true },
-            { name: 'Current Status', value: `${status.charAt(0).toUpperCase() + status.slice(1)}`, inline: true },
+            { name: 'Bot Name', value: `${member.user.tag}`, inline: false },
+            { name: 'Bot ID', value: `${USER_ID_TO_WATCH}`, inline: false },
+            { name: 'Current Status', value: `${status.charAt(0).toUpperCase() + status.slice(1)}`, inline: false },
         ]
     };
 
