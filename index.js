@@ -38,7 +38,8 @@ function formatTime() {
 }
 
 // Function to send or edit a message in the webhook
-async function sendOrEditWebhookNotification(status) {
+// Function to send or edit a message in the webhook
+async function sendOrEditWebhookNotification(status, member) {
     const embed = {
         title: 'Welcomer Status Update',
         description: `**The Welcomer bot is now**: ${status}`,
@@ -83,9 +84,7 @@ setInterval(async () => {
         const currentStatus = member.presence ? member.presence.status : 'offline';
 
         // Always edit with the current status if we have a lastMessageId
-        if (lastMessageId) {
-            await sendOrEditWebhookNotification(currentStatus);
-        }
+        await sendOrEditWebhookNotification(currentStatus, member);
     } catch (error) {
         console.error('Error fetching user status for periodic update:', error);
     }
@@ -104,7 +103,7 @@ client.on('ready', async () => {
         console.log(`Bot started. Watching user: ${member.user.tag}. Current status: ${userStatus}`);
         
         // Send initial message to the webhook
-        await sendOrEditWebhookNotification(userStatus);
+        await sendOrEditWebhookNotification(userStatus, member); // Pass member here
     } catch (error) {
         console.error('Error fetching user status on bot start:', error);
     }
@@ -121,7 +120,7 @@ client.on('presenceUpdate', async (oldPresence, newPresence) => {
         console.log(`${member.user.tag} is now ${userStatus}.`);
         
         // Edit the message with the updated status
-        await sendOrEditWebhookNotification(userStatus); // Notify via webhook
+        await sendOrEditWebhookNotification(userStatus, member); // Pass member here
     }
 });
 
