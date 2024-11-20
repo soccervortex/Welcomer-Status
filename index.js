@@ -1,15 +1,13 @@
 const express = require('express');
-const { Client, GatewayIntentBits } = require('discord.js');
-const axios = require('axios'); // We will use axios for sending HTTP requests
+const { Client, GatewayIntentBits, WebhookClient } = require('discord.js');
 const app = express();
 const port = 3000;
 require('dotenv').config();
 
-// Be very careful with your bot token: NEVER share it publicly
 const BOT_TOKEN = process.env.BOT_TOKEN;  
-const USER_ID_TO_WATCH = process.env.USER_ID_TO_WATCH; // Replace with the user ID you want to track
-const GUILD_ID = process.env.GUILD_ID; // Replace with the Guild ID of the server you are in
-const WEBHOOK_URL = process.env.WEBHOOK_URL; // URL of the webhook to notify 
+const USER_ID_TO_WATCH = process.env.USER_ID_TO_WATCH;
+const GUILD_ID = process.env.GUILD_ID;
+const WEBHOOK_URL = process.env.WEBHOOK_URL;
 
 // Create a new Discord client with the necessary intents
 const client = new Client({
@@ -21,34 +19,50 @@ const client = new Client({
     ]
 });
 
-// Store the presence of the user you're monitoring
+// Initialize the WebhookClient using the WEBHOOK_URL
+const webhookClient = new WebhookClient({ url: WEBHOOK_URL });
+
 let userStatus = 'offline';
 let lastMessageId = null;  // Store the last message ID sent to the webhook
 
-// Function to send a message to the webhook
-async function sendWebhookNotification(status) {
+// Function to format the current time nicely
+function formatTime() {
+    const now = new Date();
+    return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+// Function to send or edit a message in the webhook
+async function sendOrEditWebhookNotification(status) {
     const embed = {
         title: 'Welcomer Status Update',
-        description: `The Welcomer is now ${status}.`,
-        color: status === 'online' ? 0x00FF00 : 0xFF0000, // Green for online, Red for offline
+        description: `**The Welcomer bot is now**: ${status}`,
+        color: status === 'online' ? 0x00FF00 : 0xFF0000,
         timestamp: new Date(),
+        footer: {
+            text: `Last updated at: ${formatTime()}`,
+        },
+        fields: [
+            { name: 'User ID', value: `${USER_ID_TO_WATCH}`, inline: true },
+            { name: 'Current Status', value: `${status.charAt(0).toUpperCase() + status.slice(1)}`, inline: true },
+        ]
     };
 
     try {
-        // If lastMessageId exists, we will attempt to edit that message
         if (lastMessageId) {
-            await axios.patch(`${WEBHOOK_URL}/messages/${lastMessageId}`, { embeds: [embed] });
+            // Edit the existing message using the WebhookClient
+            const fetchedMessage = await webhookClient.fetchMessage(lastMessageId);
+            await webhookClient.editMessage(fetchedMessage.id, { embeds: [embed] });
             console.log(`Webhook message edited: ${status}`);
         } else {
             // Send a new message if no previous message exists
-            const response = await axios.post(WEBHOOK_URL, {
+            const sentMessage = await webhookClient.send({
                 embeds: [embed],
             });
-            lastMessageId = response.data.id; // Store the ID of the new message
+            lastMessageId = sentMessage.id; // Store the ID of the new message
             console.log(`Webhook notification sent: ${status}`);
         }
     } catch (error) {
-        console.error('Error sending webhook notification:', error);
+        console.error('Error sending or editing webhook notification:', error);
     }
 }
 
@@ -58,10 +72,12 @@ setInterval(async () => {
         const guild = await client.guilds.fetch(GUILD_ID);
         const member = await guild.members.fetch(USER_ID_TO_WATCH);
         
+        // Get the current status of the member
         const currentStatus = member.presence ? member.presence.status : 'offline';
-        if (userStatus !== currentStatus) {
-            userStatus = currentStatus;
-            await sendWebhookNotification(userStatus); // Notify via webhook if the status changes
+
+        // Always edit with the current status if we have a lastMessageId
+        if (lastMessageId) {
+            await sendOrEditWebhookNotification(currentStatus);
         }
     } catch (error) {
         console.error('Error fetching user status for periodic update:', error);
@@ -81,32 +97,24 @@ client.on('ready', async () => {
         console.log(`Bot started. Watching user: ${member.user.tag}. Current status: ${userStatus}`);
         
         // Send initial message to the webhook
-        await sendWebhookNotification(userStatus);
+        await sendOrEditWebhookNotification(userStatus);
     } catch (error) {
         console.error('Error fetching user status on bot start:', error);
     }
 });
 
 // Event: listen for presence updates
-client.on('presenceUpdate', (oldPresence, newPresence) => {
+client.on('presenceUpdate', async (oldPresence, newPresence) => {
     if (newPresence && newPresence.userId === USER_ID_TO_WATCH) {
         const member = newPresence.member; 
         console.log(`Presence update for user: ${member.user.tag}`);
 
-        // Enhanced logging
-        console.log('Old Presence:', oldPresence);
-        console.log('New Presence:', newPresence);
-
         // Update userStatus based on newPresence
-        if (newPresence.status === 'online') {
-            userStatus = 'online';
-            console.log(`${member.user.tag} is now online.`);
-            sendWebhookNotification('online'); // Notify via webhook
-        } else {
-            userStatus = 'offline';
-            console.log(`${member.user.tag} is now offline.`);
-            sendWebhookNotification('offline'); // Notify via webhook
-        }
+        userStatus = newPresence.status;
+        console.log(`${member.user.tag} is now ${userStatus}.`);
+        
+        // Edit the message with the updated status
+        await sendOrEditWebhookNotification(userStatus); // Notify via webhook
     }
 });
 

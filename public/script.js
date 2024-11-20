@@ -20,6 +20,6 @@ async function fetchUserStatus() {
   // Fetch status when the page loads
   window.onload = fetchUserStatus;
   
-  // Optionally, check status every 5 seconds
+  // Optionally, check status every 1 seconds
   setInterval(fetchUserStatus, 1000);
   
