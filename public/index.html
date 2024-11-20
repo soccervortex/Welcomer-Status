@@ -1,17 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Welcomer Status Tracker</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/png" href="../welcome.png">
 </head>
+
 <body>
   <div class="container">
     <h1>Welcomer Status Tracker</h1>
     <div id="status" class="status">Loading...</div>
+    <br>
+    <a
+      href="https://discord.com/oauth2/authorize?client_id=1306861195151802398&permissions=268553232&integration_type=0&scope=bot+applications.commands">Add
+      Discord Bot!</a>
+    <br>
+    <br>
+    <a href="https://discord.gg/GaCSVRC9dB">Join Welcomer Support Server!</a>
   </div>
-  
+
+  <script src='https://cdn.jsdelivr.net/npm/@widgetbot/crate@3' async defer>
+    new Crate({
+      server: '1307025695922458665', // Welcomer Support
+      channel: '1307026749426503690' // #welcome
+    })
+  </script>
   <script src="script.js"></script>
 </body>
+
 </html>

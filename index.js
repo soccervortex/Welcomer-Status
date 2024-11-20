@@ -38,7 +38,6 @@ function formatTime() {
 }
 
 // Function to send or edit a message in the webhook
-// Function to send or edit a message in the webhook
 async function sendOrEditWebhookNotification(status, member) {
     const embed = {
         title: 'Welcomer Status Update',
