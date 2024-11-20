@@ -16,7 +16,7 @@
     <script>
         async function fetchUserStatus() {
             try {
-                const response = await fetch('/api/status');
+                const response = await fetch('/status');
                 const data = await response.json();
 
                 const statusElement = document.getElementById('status');
@@ -37,7 +37,7 @@
         window.onload = fetchUserStatus;
         
         // Check status every 5 seconds
-        setInterval(fetchUserStatus, 5000);
+        setInterval(fetchUserStatus, 1000);
     </script>
 </body>
 </html>

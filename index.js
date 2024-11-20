@@ -23,6 +23,7 @@ const client = new Client({
 
 // Store the presence of the user you're monitoring
 let userStatus = 'offline';
+let lastMessageId = null;  // Store the last message ID sent to the webhook
 
 // Function to send a message to the webhook
 async function sendWebhookNotification(status) {
@@ -34,10 +35,18 @@ async function sendWebhookNotification(status) {
     };
 
     try {
-        await axios.post(WEBHOOK_URL, {
-            embeds: [embed],
-        });
-        console.log(`Webhook notification sent: ${status}`);
+        // If lastMessageId exists, we will attempt to edit that message
+        if (lastMessageId) {
+            await axios.patch(`${WEBHOOK_URL}/messages/${lastMessageId}`, { embeds: [embed] });
+            console.log(`Webhook message edited: ${status}`);
+        } else {
+            // Send a new message if no previous message exists
+            const response = await axios.post(WEBHOOK_URL, {
+                embeds: [embed],
+            });
+            lastMessageId = response.data.id; // Store the ID of the new message
+            console.log(`Webhook notification sent: ${status}`);
+        }
     } catch (error) {
         console.error('Error sending webhook notification:', error);
     }
